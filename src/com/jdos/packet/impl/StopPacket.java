@@ -8,7 +8,7 @@ import com.jdos.packet.Packet;
 /**
  * The stop packet.
  * 
- * @author Desmond Jacskon
+ * @author Desmond Jackson
  */
 public class StopPacket extends Packet {
 
